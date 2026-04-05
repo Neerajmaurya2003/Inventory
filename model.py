@@ -11,7 +11,7 @@ class StockItems(BaseModel):
     price:int
     packs:int
     sticks:int
-    pass
+    type:str
 
 
 
