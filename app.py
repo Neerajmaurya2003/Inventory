@@ -9,10 +9,12 @@ for i in wb.sheetnames:
     sheet.delete_rows(1, sheet.max_row)
     if i=="Items data":
         sheet.append(["ID","Name","Price","Sticks"])
-    if i=="Closing Data" or i=="Opening Data":
-        sheet.append(["Id","Name","Price","pack","Sticks","Date"])
+    if i=="Stock Data":
+        sheet.append(["Id","Name","Price","pack","Sticks","stick Count","Date"])
     if i=="Expense data":
         sheet.append(["id","Name","Type","Amount","Date"])
+    if i=="Credit":
+        sheet.append(["Date",	"Opening Balance",	"Closing Balance",	"Profit /Loss"])
     wb.save("database.xlsx")
     print(i)
 wb.close()

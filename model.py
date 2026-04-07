@@ -13,7 +13,7 @@ class StockItems(BaseModel):
     price:Optional[int]=None
     packs:int
     sticks:Optional[int]=0
-    type:str
+    stick_count:int
     date: Optional[dt]=None
 
 

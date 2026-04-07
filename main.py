@@ -7,55 +7,70 @@ import random
 
 app=FastAPI()
 
+item_data=[["1","Advance",25,20],["2","Lite",25,20],["3","Gold Flake",12,10],["4","Double Switch",25,10]]
 
 
-def generate_ids(id_length=6):
-    low=10**(id_length-1)
-    high=10**(id_length)-1
-    return random.randint(low,high)
 
 
 @app.post("/add_items")
-def add_Items(items:Items):
+def add_Items(item:Items=None):
     wb=xl.load_workbook("database.xlsx")
     sheet=wb["Items data"]
-    id=generate_ids(6)
-    flag=True
-    while flag:
-        if sheet.max_row==1 and sheet["A1"]==None:
-            flag=False
+    if sheet.max_row==1:
+        for i in item_data:
+            sheet.append(i)
+            wb.save("database.xlsx")
+        wb.close()
+        return{
+            "message":"Items Updated "
+        }
+    for i,val in enumerate(sheet.iter_rows(values_only=True)):
+        if i==0:
             continue
-        for index,val in enumerate(sheet.iter_rows(values_only=True)):
-            if val[0]==id:
-                id=generate_ids(6)
-                continue
-            if index==sheet.max_row-1:
-                flag=False
-
-    sheet.append([id,items.name,items.price,items.sticks])
+        if item.name.lower()==val[1].lower():
+            return {
+                "message":"Duplicated Items"
+            }
+        item_data.append([str(sheet.max_row),item.name,item.price,item.sticks])
+    sheet.append([str(sheet.max_row),item.name,item.price,item.sticks])
     wb.save("database.xlsx")
     wb.close()
     return {
-        "id":id,
-        "data":items
+        "message":"Item Saved Successfully",
+        "data":{
+            "id":sheet.max_row-1,
+            "name":item.name,
+            "price":item.price,
+            "sticks":item.sticks
+        }
     }
 
-@app.post("/add_opening_data")
-def add_opening_data(data:StockItems):
-    wb=xl.load_workbook("database.xlsx")
-    sheet=wb[data.type]
-    for index,val in enumerate(sheet.iter_rows(values_only=True)):
-        if val.__contains__(data.name):
-            return {
-                "Error":"Duplicated Items"
-            }
-    sheet.append([data.id,data.name,data.price,data.packs,data.sticks,datetime.now()])
 
+@app.post("/add_stocks_data")
+def add_stock_data(data_list: list[StockItems]):
+    wb=xl.load_workbook("database.xlsx")
+    sheet=wb["Stock Data"]
+    opening_stock=[]
+    opening_balance=0
+    closing_balance=0
+    for i, val in enumerate(sheet.iter_rows(values_only=True)):
+        if i==0: continue
+        opening_stock.append(list(val))
+        opening_balance +=((val[3]*val[5])+val[4])*val[2]
+    for data in data_list:
+        closing_balance += ((data.packs*data.stick_count)+data.sticks)*data.price
+
+    sheet2=wb["Credit"]
+    sheet2.append([datetime.now(),opening_balance,closing_balance,opening_balance-closing_balance])
     wb.save("database.xlsx")
     wb.close()
-    return data
+    return {
+        "opening Balance":opening_balance,
+        "Closing Balance":closing_balance,
+        "Profit Loss":opening_balance-closing_balance
+    }
 
-@app.post("/edit_opening_stock")
+@app.post("/edit_stocks")
 def edit_opening_stock(data:StockItems):
     wb=xl.load_workbook("database.xlsx")
     sheet=wb[data.type]
@@ -86,7 +101,7 @@ def edit_opening_stock(data:StockItems):
 def add_expense(data:ExpenseModel):
     wb=xl.load_workbook("database.xlsx")
     sheet=wb["Expense data"]
-    id=generate_ids(6)
+    id=89
     flag=True
 
     while flag:
@@ -95,7 +110,7 @@ def add_expense(data:ExpenseModel):
             continue
         for index,val in enumerate(sheet.iter_rows(values_only=True)):
             if val[0]==id:
-                id=generate_ids(6)
+                id=89
                 continue
             if index==sheet.max_row-1:
                 flag=False
@@ -117,7 +132,7 @@ def add_new_stock(list:list[StockItems]):
     wb.close()
     pass
 
-@app.post("/")
+@app.post("/calculate_leakage")
 def calculate_leakage(data:dict):
     online_amount=data["online"]
     cash_amount=data["cash"]
@@ -126,7 +141,6 @@ def calculate_leakage(data:dict):
     opening_sheet=wb["Opening Data"]
     closing_sheet=wb["Closing Data"]
     expense_sheet=wb["Expense data"]
-    data=[]
     opening_balance=0
     closing_balance=0
     total_expense=0
