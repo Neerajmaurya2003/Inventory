@@ -1,7 +1,5 @@
-import openpyxl as xl
 
 
-wb=xl.load_workbook("database.xlsx")
-sheet=wb.sheetnames
+a=7
 
-print(sheet)
+print(int(a/3))

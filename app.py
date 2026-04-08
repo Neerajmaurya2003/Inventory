@@ -9,7 +9,7 @@ for i in wb.sheetnames:
     sheet.delete_rows(1, sheet.max_row)
     if i=="Items data":
         sheet.append(["ID","Name","Price","Sticks"])
-    if i=="Stock Data":
+    if i=="Stock Data" or i=="Opening Stock":
         sheet.append(["Id","Name","Price","pack","Sticks","stick Count","Date"])
     if i=="Expense data":
         sheet.append(["id","Name","Type","Amount","Date"])

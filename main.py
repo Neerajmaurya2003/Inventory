@@ -49,23 +49,41 @@ def add_Items(item:Items=None):
 @app.post("/add_stocks_data")
 def add_stock_data(data_list: list[StockItems]):
     wb=xl.load_workbook("database.xlsx")
-    sheet=wb["Stock Data"]
-    opening_stock=[]
+    opening_sheet=wb["Opening Stock"]
+    stock_sheet=wb["Stock Data"]
+    new_opening_data=[]
     opening_balance=0
     closing_balance=0
-    for i, val in enumerate(sheet.iter_rows(values_only=True)):
+    for i,val in enumerate(opening_sheet.iter_rows(values_only=True)):
         if i==0: continue
-        opening_stock.append(list(val))
-        opening_balance +=((val[3]*val[5])+val[4])*val[2]
-    for data in data_list:
-        closing_balance += ((data.packs*data.stick_count)+data.sticks)*data.price
+        opening_sticks=(val[3]*val[5])+val[4]
+        opening_balance +=opening_sticks*val[2]
+        for data in data_list:
+            if val[0]!=str(data.id):
+                continue
+            closing_sticks=(data.packs*data.stick_count)+data.sticks
+            closing_balance +=closing_sticks*data.price
+            remaining_sticks=opening_sticks-closing_sticks
+            stock_sticks=remaining_sticks % data.stick_count
+            stock_packs=int(remaining_sticks/data.stick_count)
+            new_opening_data.append([data.id,data.name,data.price,stock_packs,stock_sticks,data.stick_count,datetime.now()])
 
-    sheet2=wb["Credit"]
-    sheet2.append([datetime.now(),opening_balance,closing_balance,opening_balance-closing_balance])
+    for data in new_opening_data:
+        for i, val in enumerate(opening_sheet.iter_rows(values_only=True)):
+            if i==0: continue
+            if str(val[0])==str(data[0]):
+                opening_sheet.cell(row=i+1,column=4).value=data[3]
+                opening_sheet.cell(row=i+1,column=5).value=data[4]
+                opening_sheet.cell(row=i+1,column=7).value=data[6]
+                wb.save("database.xlsx")
+        stock_sheet.append(data)
+        wb.save("database.xlsx")
+    credit_sheet=wb["Credit"]
+    credit_sheet.append([datetime.now(),opening_balance,closing_balance,opening_balance-closing_balance])
     wb.save("database.xlsx")
     wb.close()
     return {
-        "opening Balance":opening_balance,
+        "Opening Balance":opening_balance,
         "Closing Balance":closing_balance,
         "Profit Loss":opening_balance-closing_balance
     }
