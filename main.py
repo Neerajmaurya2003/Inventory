@@ -64,9 +64,7 @@ def add_stock_data(data_list: list[StockItems]):
             closing_sticks=(data.packs*data.stick_count)+data.sticks
             closing_balance +=closing_sticks*data.price
             remaining_sticks=opening_sticks-closing_sticks
-            stock_sticks=remaining_sticks % data.stick_count
-            stock_packs=int(remaining_sticks/data.stick_count)
-            new_opening_data.append([data.id,data.name,data.price,stock_packs,stock_sticks,data.stick_count,datetime.now()])
+            new_opening_data.append([data.id,data.name,data.price,data.packs,data.sticks,data.stick_count,datetime.now()])
 
     for data in new_opening_data:
         for i, val in enumerate(opening_sheet.iter_rows(values_only=True)):
@@ -88,115 +86,21 @@ def add_stock_data(data_list: list[StockItems]):
         "Profit Loss":opening_balance-closing_balance
     }
 
-@app.post("/edit_stocks")
-def edit_opening_stock(data:StockItems):
-    wb=xl.load_workbook("database.xlsx")
-    sheet=wb[data.type]
-
-    for idx,row in enumerate(sheet.iter_rows(values_only=True)):
-        if row[0]==data.name:
-            sheet.cell(row=idx+1,column=2).value=data.price
-            sheet.cell(row=idx+1,column=3).value=data.packs
-            sheet.cell(row=idx+1,column=4).value=data.sticks
-            sheet.cell(row=idx+1,column=5).value=datetime.now()
-            wb.save("database.xlsx")
-            return {
-                "name":data.name,
-                "price":data.price,
-                "packs":data.packs,
-                "sticks":data.sticks
-            }
-            
-
-    
-    wb.close()
-    return{
-        "message":"Entry not found"
-    }
-
 
 @app.post("/add_expense")
-def add_expense(data:ExpenseModel):
+def add_expense(data_list:list[ExpenseModel]):
     wb=xl.load_workbook("database.xlsx")
     sheet=wb["Expense data"]
-    id=89
-    flag=True
-
-    while flag:
-        if sheet.max_row==1 and sheet["A1"]==None:
-            flag=False
-            continue
-        for index,val in enumerate(sheet.iter_rows(values_only=True)):
-            if val[0]==id:
-                id=89
-                continue
-            if index==sheet.max_row-1:
-                flag=False
-    
-    sheet.append([id,data.name,data.type,data.amount,datetime.now()])
-
-
-@app.post("/add_new_stock")
-def add_new_stock(list:list[StockItems]):
-    wb=xl.load_workbook("database.xlsx")
-    sheet=wb[list[0].type]
-    for data in list:
-        for i,val in enumerate(sheet.iter_rows(values_only=True)):
-            if val[0]==data.id:
-                sheet.cell(row=i+1,column=4).value=val[3]+data.packs
-                wb.save("database.xlsx")
-                continue
-
-    wb.close()
-    pass
-
-@app.post("/calculate_leakage")
-def calculate_leakage(data:dict):
-    online_amount=data["online"]
-    cash_amount=data["cash"]
-    wb=xl.load_workbook("database.xlsx")
-    items=wb["Items data"]
-    opening_sheet=wb["Opening Data"]
-    closing_sheet=wb["Closing Data"]
-    expense_sheet=wb["Expense data"]
-    opening_balance=0
-    closing_balance=0
-    total_expense=0
-
-    for i,val in enumerate(expense_sheet.iter_rows(values_only=True)):
-        if i==0:
-            continue
-        total_expense+=val[3]
-
-    for i, val in enumerate(items.iter_rows(values_only=True)):
-        if i==0:
-            continue
-        id=val[0]
-        stick_count=val[2]
-        price=val[3]
-
-        for j, value in enumerate(opening_sheet.iter_rows(values_only=True)):
-            if j==0:
-                continue
-            total_stick_count=0
-            if value[0]==id:
-               total_stick_count= (value[3]*stick_count)+value[4]
-               opening_balance += total_stick_count*price
-            
-        for j, value in enumerate(closing_sheet.iter_rows(values_only=True)):
-            if j==0:
-                continue
-            total_stick_count=0
-            if value[0]==id:
-               total_stick_count= (value[3]*stick_count)+value[4]
-               closing_balance +=total_stick_count*price
-
-    wb.close()
-    return{
-        "opening Balance":opening_balance,
-        "Closing Balance":closing_balance,
-        "Total Expenses":total_expense,
-        "Total Earning":opening_balance-closing_balance,
-        "total amount Earned":online_amount+ cash_amount,
-        "Profit/Loss":(opening_balance-closing_balance)-(online_amount+ cash_amount)
-    }
+    try:
+        for data in data_list:
+            id=sheet.max_row
+            sheet.append([str(id),data.name,data.type,data.amount,datetime.now()]) 
+            wb.save("database.xlsx")
+        wb.close()
+        return {
+            "Message":"Code Executed Successfully"
+        }
+    except  :
+        return{
+            "Message":"Something Went Wrong",
+        }
