@@ -1,13 +1,11 @@
-import os
-from fastapi import FastAPI
+
 from datetime import datetime
+
+import os
 from pymongo import MongoClient
 from dotenv import load_dotenv
 
-
 load_dotenv()
-
-app=FastAPI()
 
 
 MONGO_URI=os.getenv("MONGO_URI","")
@@ -20,7 +18,7 @@ client=MongoClient(MONGO_URI)
 
 db=client["inventory"]
 
-@app.post("/add_item_list")
+
 def add_item_list(data_list:list[dict]):
     collection=db["item-list"]
     try:
@@ -34,16 +32,14 @@ def add_item_list(data_list:list[dict]):
             "error":e
         }
     
-@app.get("/retrive_item_list")
 def retrive_item_list():
     collection=db["item-list"]
     try:
         if collection.find():
-            data_list=collection.find().to_list()
-            for data in data_list:
+            for data in collection.find():
                 print(data)
-            return  {
-                "data":data_list,
+            return {
+                "data":collection.find().to_list(),
                 "message":"Itemss successfully fetched"
             }
         return {
@@ -55,7 +51,6 @@ def retrive_item_list():
             "error":e
         }
 
-@app.post("/add_opening_data")
 def add_opening_stock(data_list:list[dict]):
     collection=db["opening stock"]
     try:
@@ -69,8 +64,6 @@ def add_opening_stock(data_list:list[dict]):
             "error":e
         }
 
-
-@app.get("/retrive_opening_data")
 def retrive_opening_data():
     collection=db["opening stock"]
     try:
@@ -87,7 +80,6 @@ def retrive_opening_data():
             "message":"Something went Wrong",
             "error":e
         }
-
 
 def update_opening_stock(data_list:list[dict]):
     collection=db["opening stock"]
@@ -117,8 +109,7 @@ def add_daily_stock_data(data:list[dict]):
             "message":"Something Went Wrong",
             "error":e
         }
-
-@app.post("/calculate_leakage")  
+    
 def calculate_leakage(data:dict):
     collection=db["opening stock"]
     item_collection=db["item-list"]
@@ -191,8 +182,3 @@ data={
 
 response=calculate_leakage(data)
 print(response)
-
-
-
-
-
